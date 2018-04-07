@@ -1,0 +1,390 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Gee Bee for elderly</title>
+    <style>
+			html, body {width:  100%; height: 100%; margin: 0px;}
+	</style>
+	
+</head>
+
+<body>
+
+<canvas id="canvas" style='position:absolute; left:0px; top:0px;'></canvas>
+
+<script>
+	var canvas = document.getElementById("canvas");
+	var ctx = canvas.getContext("2d");
+    (function() {
+      
+        // Obtain a reference to the canvas element using its id.
+
+
+       // Start listening to resize events and draw canvas.
+       initialize();
+
+       function initialize() {
+           // Register an event listener to call the resizeCanvas() function 
+           // each time the window is resized.
+           window.addEventListener('resize', resizeCanvas, false);
+           // Draw canvas border for the first time.
+           resizeCanvas();
+        }
+
+        // Display custom canvas. In this case it's a blue, 5 pixel 
+        // border that resizes along with the browser window.
+        function redraw() {
+		    ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+       
+		    setInterval(draw,10);
+        }
+
+        // Runs each time the DOM window resize event fires.
+        // Resets the canvas dimensions to match window,
+        // then draws the new borders accordingly.
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            redraw();
+        }
+    })();
+	
+
+    var ballX = canvas.width/2;
+    var ballY = canvas.height/2-40;
+    var ballRadius = 10;
+    var paddleX = canvas.width/2;
+    var paddleWidth = canvas.width/8;
+    var brickheight = canvas.width/40;
+    var bricklength = canvas.height/25;
+    var brickColumnCount = 12;
+    var brickRowCount = 7;
+    var rightPressed = false;
+    var leftPressed = false;
+    var speedup = false;
+    var speeddown = false;
+    var speedx = 1.5;
+    var speedy = -2.5;
+    var score = 0;
+    var bonus = 0;
+    var bricks = [];
+    var lives = 3;
+
+		
+    for(c=0; c<brickColumnCount;c++){
+        bricks[c] = [];
+        for(r=0; r<brickRowCount; r++){
+            bricks[c][r] = {x:0, y:0, status:1};
+        }
+    }
+    var ballsize = prompt("input small/big/middle for ball size", "middle");
+    switch(ballsize){
+        case "middle":
+        ballRadius = 15;
+        break;
+        case "small":
+        ballRadius = 10;
+        break;
+        case "big":
+        ballRadius = 20;
+        break;
+    }
+	var speed = prompt("input low/middle/high to select speed", "middle");
+    switch(speed){
+        case "middle":
+		speedx = -2.5;
+        speedy = -2.5;
+        break;
+        case "low":
+		speedx = -1.5;
+        speedy = -1.5;
+        break;
+        case "high":
+        speedx = -5;
+		speedy = -5;
+        break;
+    }
+
+    document.addEventListener("mousemove",mouseMoveHandler,false);
+    
+
+    function mouseMoveHandler(e) {
+        var relativeX = e.clientX - canvas.offsetLeft;
+        if(relativeX > 25 && relativeX < canvas.width - 25 - paddleWidth) {
+            paddleX = relativeX + paddleWidth/2;
+        }
+    
+    }
+
+
+    function collision(){
+        for(c=0; c<brickColumnCount; c++){
+            for(r=0; r<brickRowCount; r++){
+                var b = bricks[c][r];
+                if(b.status == 1){
+
+                    if(c > 2 && c<=8){
+                        if(ballX > b.x && ballX < b.x + bricklength 
+                            && ballY - ballRadius > b.y && ballY - ballRadius < b.y + brickheight){
+                            speedy = -speedy;
+                            b.status = 0;
+                            score=score+2;
+                            if(score == brickRowCount*brickColumnCount){
+                                alert("Congratulations!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                    
+                    else if(c>8){
+                        if(ballX + ballRadius > b.x && ballX + ballRadius < b.x + brickheight 
+                            && ballY > b.y && ballY < b.y + bricklength){
+                            speedy = -speedy;
+                            b.status = 0;
+                            score=score+3;
+                            if(score == 2*brickRowCount*brickColumnCount){
+                                alert("Congratulations!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                    else{
+                        if(ballX - ballRadius > b.x && ballX - ballRadius < b.x + brickheight 
+                            && ballY > b.y && ballY < b.y + bricklength){
+                            speedy = -speedy;
+                            b.status = 0;
+                            score++;
+                            if(score == 2*brickRowCount*brickColumnCount){
+                                alert("Congratulations!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                }
+                
+            }
+        }
+    }
+    function collisionwall(){
+        //detect collision with external walls
+        if(ballX  + speedx > canvas.width - ballRadius - 10 || ballX  + speedx < ballRadius +10){
+            speedx = -speedx;
+        }
+        if(ballY + speedy < ballRadius + 10 ){
+           
+            speedy = -speedy;  
+        }
+
+        //detect collision with paddle
+        if(ballY + speedy > canvas.height - ballRadius -10){
+            speedy = - speedy;
+            if(ballX < paddleX - paddleWidth/2 || ballX > paddleX + paddleWidth/2){
+                if(lives > 0){
+                    lives--;
+                }
+                else{
+                    alert("game over");
+                    document.location.reload();
+                }
+            }
+        }
+     //detect collision with upper internal walls
+	 var distance = (canvas.width/40+5)*3 + 15;
+     if(ballY - ballRadius +speedy > 5 && ballY + ballRadius +speedy < 100 + 5+ 5){
+        if((ballX + ballRadius +speedx > distance && ballX - ballRadius + speedx < distance+5) || (ballX + ballRadius + speedx > canvas.width-distance - 5 && ballX -ballRadius + speedx < canvas.width - distance)){
+            speedx = -speedx;
+        }
+     }
+     
+	//detect collision with lower internal wall
+     if(ballY + ballRadius +speedy > canvas.height-50){
+        if((ballX + ballRadius + speedx > 25 && ballX - ballRadius + speedx < 30) || (ballX + ballRadius + speedx > canvas.width-30 && ballX - ballRadius + speedx < canvas.width-30 + 5)){
+            speedx = -speedx;
+        }
+     }
+	 //detect collision with 'nose'
+     if(ballY + ballRadius +speedy >= canvas.height/2 && ballY + ballRadius + speedy < canvas.height/2+100 
+        && ballX + ballRadius + speedx > canvas.width/2-20 && ballX - ballRadius + speedx < canvas.width/2+20){
+        speedy = -speedy;
+     } 
+     if(ballY - ballRadius +speedy >= canvas.height/2 && ballY - ballRadius + speedy < canvas.height/2+100 
+        && ballX + ballRadius + speedx > canvas.width/2-20 && ballX - ballRadius + speedx < canvas.width/2+20){
+        speedy = -speedy;
+     } 
+	 if(ballY + ballRadius +speedy >= canvas.height/2 && ballY + ballRadius + speedy < canvas.height/2+100 
+        && ballX + ballRadius + speedx > canvas.width/2-20 && ballX - ballRadius + speedx < canvas.width/2+20){
+        speedx = -speedx;
+     } 
+     if(ballY - ballRadius +speedy >= canvas.height/2 && ballY - ballRadius + speedy < canvas.height/2+100 
+        && ballX + ballRadius + speedx > canvas.width/2-20 && ballX - ballRadius + speedx < canvas.width/2+20){
+        speedx = -speedx;
+     } 
+     //dectect collision with hexagons
+     if(ballY > ballX + (canvas.height - canvas.width)/4  && ballY > - ballX + (canvas.width+canvas.height)/4 && ballY < canvas.height/4 + 30){
+        speedx = -speedx;
+        speedy = -speedy;
+        bonus++;
+     }
+     if(ballY < ballX + (canvas.height-canvas.width)/4 + 90  && ballY < -ballX + (canvas.width + canvas.height)/4 + 90  && ballY > canvas.height/4 + 60){
+        speedx = -speedx;
+        speedy = -speedy;
+        bonus++;
+     }
+    if(ballY  + speedy > canvas.height/4 + 30 && ballY  + speedy < canvas.height/4 + 60 
+        && ballX  + speedx > canvas.width/4 - 30 && ballX  + speedx < canvas.width/4 + 30){
+        speedx = -speedx;
+        bonus++;
+    }
+
+    if(ballY > ballX + (canvas.height - 3*canvas.width)/4  && ballY > - ballX + (3*canvas.width+canvas.height)/4 && ballY < canvas.height/4 + 30){
+        speedx = -speedx;
+        speedy = -speedy;
+        bonus++;
+     }
+     if(ballY < ballX + (canvas.height- 3*canvas.width)/4 + 90  && ballY < -ballX + (3*canvas.width + canvas.height)/4 + 90  && ballY > canvas.height/4 + 60){
+        speedx = -speedx;
+        speedy = -speedy;
+        bonus++;
+     }
+    if(ballY  + speedy > canvas.height/4 + 30 && ballY  + speedy < canvas.height/4 + 60 
+        && ballX  + speedx > 3*canvas.width/4 - 30 && ballX  + speedx < 3*canvas.width/4 + 30){
+        speedx = -speedx;
+        bonus++;
+    }
+
+    }
+
+ 
+    function drawWall(){
+        ctx.beginPath();
+		//draw the frame
+        ctx.rect(5,5,5,canvas.height);
+        ctx.rect(5,5,canvas.width-10,5);
+        ctx.rect(canvas.width-10,5,5,canvas.height);
+		//draw the lower internal wall
+        ctx.rect(25,canvas.height-50,5,50);
+        ctx.rect(canvas.width-35,canvas.height-50,5,50);
+		//draw the upper internal wall
+		var distance = (canvas.width/40+5)*3 + 15;
+        ctx.rect(distance,5,5,100);
+        ctx.rect(canvas.width-distance-5,5,5,100);
+        //draw the 'nose'
+		ctx.rect(canvas.width/2-20,canvas.height/2,40,100);
+        ctx.fillStyle = "blue";
+        ctx.fill();
+        ctx.closePath();
+    }
+    function drawBall(){
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, ballRadius, 0, Math.PI*2, false);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+
+        ballX += speedx;
+        ballY += speedy;
+    }
+
+    function drawPaddle(){
+        ctx.beginPath();
+        ctx.rect(paddleX-paddleWidth/2, canvas.height-10, paddleWidth, 10);
+        
+        ctx.fillStyle = "green";
+        ctx.fill();
+        ctx.closePath();
+        if(rightPressed && paddleX < canvas.width - paddleWidth){
+            paddleX += 7;
+        }
+        if(leftPressed && paddleX > 30+paddleWidth/2){
+            paddleX -= 7;
+        }
+    }
+    function drawHexagon(){
+        ctx.beginPath();
+        ctx.moveTo(canvas.width/4,canvas.height/4);
+        ctx.lineTo(canvas.width/4+30,canvas.height/4+30);
+        ctx.lineTo(canvas.width/4+30,canvas.height/4+60);
+        ctx.lineTo(canvas.width/4,canvas.height/4+90);
+        ctx.lineTo(canvas.width/4-30,canvas.height/4+60);
+        ctx.lineTo(canvas.width/4-30,canvas.height/4+30);
+
+        ctx.moveTo(3*canvas.width/4,canvas.height/4);
+        ctx.lineTo(3*canvas.width/4+30,canvas.height/4+30);
+        ctx.lineTo(3*canvas.width/4+30,canvas.height/4+60);
+        ctx.lineTo(3*canvas.width/4,canvas.height/4+90);
+        ctx.lineTo(3*canvas.width/4-30,canvas.height/4+60);
+        ctx.lineTo(3*canvas.width/4-30,canvas.height/4+30);
+        ctx.fillStyle = "black";
+        ctx.fill();
+        ctx.closePath();
+    }
+    function drawBricks(){
+        for(c = 0; c < brickColumnCount; c++){
+            for(r = 0; r < brickRowCount; r++){
+                if(bricks[c][r].status == 1){
+                    var brickX, brickY;
+                    if(c<=2){
+                        brickX = c*(brickheight +5)+15;
+                        brickY = r*(bricklength +5) + 10;
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY,brickheight, bricklength);
+                        ctx.fillStyle = "yellow";
+                        ctx.fill();
+                        ctx.closePath();
+
+                    }
+                    if(c>2 && c <= 8){
+                        brickX = (r-3)*(bricklength + 5)+canvas.width/2;
+                        brickY = (c-2)*(brickheight + 5);
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY,bricklength, brickheight);
+                        ctx.fillStyle = "blue";
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                    if(c > 8){
+                        brickX = canvas.width - (c-8)*(brickheight+5) -10;
+                        brickY = r*(bricklength + 5)+ 10;
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY,brickheight, bricklength);
+                        ctx.fillStyle = "green";
+                        ctx.fill();
+                        ctx.closePath();
+
+                    }
+                    
+                    bricks[c][r].x = brickX;
+                    bricks[c][r].y = brickY;
+                }
+               
+            }
+        }
+
+    }
+    function drawstatus(){
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "black";
+        ctx.fillText("Lives: "+lives, canvas.width-70,30);
+        ctx.fillText("Score: "+score,canvas.width-70,45);
+        ctx.fillText("Bonus: "+bonus, canvas.width-70,60);
+    }
+ 
+    function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        collision();
+        collisionwall();
+        drawBall();
+        drawPaddle();
+        drawWall();
+        drawHexagon();
+        drawBricks();
+        drawstatus();
+    }
+    //setInterval(draw,10);
+    
+</script>
+
+</body>
+</html> 
